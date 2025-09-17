@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+
 const userSchema = new mongoose.Schema({
   team_name: {
     type: String,
@@ -9,30 +10,30 @@ const userSchema = new mongoose.Schema({
   roll_nos: {
     type: [String],
     required: true,
-    validate: {
-      validator: function(v: string[]) {
-        return v.length === 3; // Must have exactly 3 roll numbers
-      },
-      message: 'Team must have exactly 3 roll numbers'
-    }
   },
   emails: {
     type: [String],
     required: true,
-    validate: {
-      validator: function(v: string[]) {
-        return v.length === 3; // Must have exactly 3 emails
-      },
-      message: 'Team must have exactly 3 email addresses'
-    }
   },
   otp: {
     code: String,
     generatedAt: Date,
     expiresAt: Date,
   },
+  score: {
+    type: Number,
+    default: 0
+  },
+  testcases_passed: {
+    type: [Number],
+    default: []
+  },
+  year: {
+    type: Number,
+    required: true
+  }
 }, {
-  timestamps: true // Adds createdAt and updatedAt fields
+  timestamps: true 
 });
 
 export default mongoose.model('User', userSchema);
