@@ -8,11 +8,16 @@ import adminRoutes from './routes/adminRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
+import http from 'http';
+import { WebSocketServer } from 'ws';
+import User from './models/userModel.js';
 
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -40,6 +45,18 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Express + TypeScript Server is running');
 });
 
-app.listen(port, () => {
+
+// WebSocket: broadcast all team scores
+wss.on('connection', async (ws) => {
+  try {
+    const teams = await User.find({}, 'team_name score');
+    ws.send(JSON.stringify({ type: 'scores', teams }));
+  } catch (err) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Could not fetch scores.' }));
+  }
+});
+
+server.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
+  console.log(`WebSocket server running at ws://localhost:${port}`);
 });

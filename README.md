@@ -309,37 +309,6 @@
 
 ---
 
-## Protected Test Route
-
-### GET `/protected`
-**Description:** Test route to verify authentication.
-
-**Response:**
-- Success:  
-  ```json
-  {
-    "success": true,
-    "message": "You have access to this protected route",
-    "user": { ...user payload... }
-  }
-  ```
-- Error:  
-  ```json
-  {
-    "success": false,
-    "message": "Please authenticate"
-  }
-  ```
-
----
-
-## General Response Format
-
-- Success responses generally include `"success": true` and relevant data.
-- Error responses include `"success": false` and a `"message"` or `"error"` field.
-
----
-
 ## Notes
 
 - All `/admin/*` routes require authentication via cookie (`codenvibe_token`).
