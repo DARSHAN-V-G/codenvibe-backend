@@ -1,9 +1,12 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import type { Express, Request, Response } from 'express';
 import * as dotenv from 'dotenv';
 import connectDB from './db/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import questionRoutes from './routes/questionRoutes.js';
+import submissionRoutes from './routes/submissionRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
 
 dotenv.config();
@@ -13,9 +16,12 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 connectDB();
 // Public routes
 app.use('/auth', authRoutes);
+app.use('/question',questionRoutes);
+app.use('/submission', submissionRoutes);
 
 // Admin routes (protected)
 app.use('/admin', adminRoutes);

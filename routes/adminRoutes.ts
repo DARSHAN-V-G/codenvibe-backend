@@ -5,7 +5,6 @@ import { protect } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // All admin routes are protected
-router.use(protect);
 
 router.post('/add-team', addTeam);
 router.get('/teams', getAllTeams);

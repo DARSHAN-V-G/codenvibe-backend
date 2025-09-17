@@ -16,9 +16,8 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   otp: {
-    code: String,
-    generatedAt: Date,
-    expiresAt: Date,
+    type: Object,
+    default: { code: '', generatedAt: null, expiresAt: null },
   },
   score: {
     type: Number,
@@ -31,6 +30,11 @@ const userSchema = new mongoose.Schema({
   year: {
     type: Number,
     required: true
+  },
+  members: {
+    type: [String],
+    required: false,
+    default: []
   }
 }, {
   timestamps: true 

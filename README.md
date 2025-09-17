@@ -1,60 +1,350 @@
+# codenvibe-backend API Documentation
 
-# codenvibe-backend
+## Authentication Routes
 
-## API Documentation
+### POST `/auth/request-login`
+**Description:** Request login OTP for a team member.
 
-### Authentication Routes
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
 
-| Method | Endpoint           | Description                | Status |
-|--------|--------------------|----------------------------|--------|
-| POST   | /request-login     | Request login (OTP based)  | Pravith |
-| POST   | /verify-otp        | Verify OTP                 | pravith |
-
-### Admin Routes (Protected)
-
-| Method | Endpoint           | Description                | Status |
-|--------|--------------------|----------------------------|--------|
-| POST   | /add-team          | Add a new team             | Pravith|
-| GET    | /teams             | Get all teams              | Pravith |
-| DELETE | /remove-team       | Remove a team              | Pravith |
-
----
-
-## Debugging Portal API
-
-### Question Management
-| Method | Endpoint                | Description                                 | Status |
-|--------|------------------------|---------------------------------------------|--------|
-| GET    | /questions/:year       | Get all questions for a specific year       |  |
-| POST   | /questions             | Add a new question (admin only)             | |
-| PUT    | /questions/:id         | Update a question (admin only)              |  |
-| DELETE | /questions/:id         | Delete a question (admin only)              |  |
-
-### Team Management
-| Method | Endpoint                | Description                                 | Status |
-|--------|------------------------|---------------------------------------------|--------|
-| GET    | /teams/:year           | Get all teams for a specific year           |  |
-| POST   | /teams                  | Register a new team                         | |
-| PUT    | /teams/:id              | Update team details                         |  |
-| DELETE | /teams/:id              | Remove a team                               |  |
-
-### Submission & Scoring
-| Method | Endpoint                        | Description                                         | Status |
-|--------|----------------------------------|-----------------------------------------------------|--------|
-| POST   | /submit/:questionId              | Submit solution for a question                      |  |
-| GET    | /submissions/:teamId             | Get all submissions by a team                       |  |
-| GET    | /score/:teamId                   | Get current score and ranking for a team            |  |
-
-#### Scoring Logic
-- Points are awarded based on the number of test cases passed per question.
-- Bonus points for early submissions (timestamp-based).
-- Leaderboard ranks teams by total points and submission time.
-
-### Year-Based Question Sets
-- `/questions/1` — Questions for 1st year
-- `/questions/2` — Questions for 2nd year
-- `/questions/3` — Questions for 3rd year
+**Response:**
+- Success:  
+  ```json
+  {
+    "success": true,
+    "message": "OTP sent successfully to all team members"
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "message": "Email is required"
+  }
+  ```
 
 ---
 
+### POST `/auth/verify-otp`
+**Description:** Verify OTP and login.
 
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "otp": "123456"
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "success": true,
+    "team": {
+      "team_name": "Team Name",
+      "roll_nos": ["roll1", "roll2"],
+      "emails": ["user1@example.com", "user2@example.com"]
+    }
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "message": "Invalid OTP"
+  }
+  ```
+
+---
+
+## Admin Routes (Protected)
+
+### POST `/admin/add-team`
+**Description:** Add a new team.
+
+**Request Body:**
+```json
+{
+  "team_name": "Team Name",
+  "roll_nos": ["roll1", "roll2"],
+  "emails": ["user1@example.com", "user2@example.com"],
+  "year": 1,
+  "members": ["Member1", "Member2"]
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "message": "User added successfully",
+    "user": { ...team object... }
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "message": "Error adding teams"
+  }
+  ```
+
+---
+
+### GET `/admin/teams`
+**Description:** Get all teams.
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "success": true,
+    "teams": [
+      {
+        "team_name": "Team Name",
+        "roll_nos": ["roll1", "roll2"],
+        "emails": ["user1@example.com", "user2@example.com"]
+      }
+    ]
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "message": "Error retrieving teams"
+  }
+  ```
+
+---
+
+### DELETE `/admin/remove-team`
+**Description:** Remove a team.
+
+**Request Body:**
+```json
+{
+  "team_name": "Team Name"
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "success": true,
+    "message": "Team removed successfully"
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "message": "Team not found"
+  }
+  ```
+
+---
+
+## Question Routes
+
+### POST `/question/add`
+**Description:** Add a new question.
+
+**Request Body:**
+```json
+{
+  "year": 1,
+  "correct_code": "print('Hello')",
+  "incorrect_code": "print('Hi')",
+  "test_cases": [
+    { "input": "input1", "expectedOutput": "output1" }
+  ]
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  { ...question object... }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Missing or invalid required fields: year, correct_code, incorrect_code, test_cases"
+  }
+  ```
+
+---
+
+### PUT `/question/update/:id`
+**Description:** Update a question.
+
+**Request Body:** (any subset of fields)
+```json
+{
+  "year": 1,
+  "correct_code": "print('Hello')",
+  "incorrect_code": "print('Hi')",
+  "test_cases": [
+    { "input": "input1", "expectedOutput": "output1" }
+  ]
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  { ...updated question object... }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Question not found"
+  }
+  ```
+
+---
+
+### POST `/question/check/:id`
+**Description:** Check the correct code for a question against its test cases.
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "passed": 2,
+    "total": 3,
+    "results": [
+      { "passed": true, ... },
+      { "passed": false, ... }
+    ]
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Compiler service error",
+    "details": { ... }
+  }
+  ```
+
+---
+
+### GET `/question/getQuestion`
+**Description:** Get all question IDs for the authenticated user's year.
+
+**Response:**
+- Success:  
+  ```json
+  [
+    { "_id": "questionId1" },
+    { "_id": "questionId2" }
+  ]
+  ```
+- Error:  
+  ```json
+  {
+    "error": "User ID not found in request. Make sure you are authenticated."
+  }
+  ```
+
+---
+
+### GET `/question/question/:id`
+**Description:** Get a question by ID (only if it matches user's year).
+
+**Response:**
+- Success:  
+  ```json
+  { ...question object... }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Access denied. Question is not for your year."
+  }
+  ```
+
+---
+
+## Submission Routes
+
+### POST `/submission/submit`
+**Description:** Submit code for a question.
+
+**Request Body:**
+```json
+{
+  "code": "print('Hello')",
+  "questionid": "questionId"
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "submissionid": "submissionId",
+    "passedCount": 2,
+    "newScore": 20,
+    "results": [
+      { "passed": true, ... },
+      { "passed": false, ... }
+    ]
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Missing required fields."
+  }
+  ```
+
+---
+
+## Protected Test Route
+
+### GET `/protected`
+**Description:** Test route to verify authentication.
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "success": true,
+    "message": "You have access to this protected route",
+    "user": { ...user payload... }
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "message": "Please authenticate"
+  }
+  ```
+
+---
+
+## General Response Format
+
+- Success responses generally include `"success": true` and relevant data.
+- Error responses include `"success": false` and a `"message"` or `"error"` field.
+
+---
+
+## Notes
+
+- All `/admin/*` routes require authentication via cookie (`codenvibe_token`).
+- All `/question/getQuestion`, `/question/question/:id`, `/submission/submit`, and `/protected` routes require authentication.
+- OTP-based authentication is used for login.
+- Team and question management is year-based.
+
+---

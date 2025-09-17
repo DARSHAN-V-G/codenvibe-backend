@@ -132,10 +132,17 @@ export const verifyOTP = async (req: Request, res: Response) => {
     // Generate JWT token with team details
     const token = generateToken(team._id.toString());
 
-    // Send response with token and team details
+    // Set token in cookie
+    res.cookie('codenvibe_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 60 * 1000 // 30 minutes
+    });
+
+    // Send response with team details (token is now in cookie)
     const response: AuthResponse = {
       success: true,
-      token,
       team: {
         team_name: team.team_name,
         roll_nos: team.roll_nos,

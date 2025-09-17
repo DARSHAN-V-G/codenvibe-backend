@@ -7,6 +7,7 @@ interface TestCase {
 
 export interface IQuestion extends Document {
   year: number;
+  number : number;
   correct_code: string;
   incorrect_code: string;
   test_cases: TestCase[];
@@ -18,6 +19,7 @@ const TestCaseSchema: Schema = new Schema({
 });
 
 const QuestionSchema: Schema = new Schema({
+  number : {type : Number, required: true, unique: true},
   year: { type: Number, required: true },
   correct_code: { type: String, required: true },
   incorrect_code: { type: String, required: true },

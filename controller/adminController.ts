@@ -17,71 +17,22 @@ interface TeamDocument extends Document {
 
 export const addTeam = async (req: Request, res: Response) => {
   try {
-    const { team_name, roll_nos, emails } = req.body;
-
-    if (!team_name || !roll_nos || !emails) {
-      const response: AuthResponse = {
-        success: false,
-        message: 'Team name, roll numbers, and emails are required'
-      };
-      res.status(400).json(response);
-      return;
-    }
-
-    // Validate array lengths
-    if (roll_nos.length !== 3 || emails.length !== 3) {
-      const response: AuthResponse = {
-        success: false,
-        message: 'Team must have exactly 3 roll numbers and 3 email addresses'
-      };
-      res.status(400).json(response);
-      return;
-    }
-
-    // Check if team name already exists
-    const existingTeam = await User.findOne({ team_name });
-    if (existingTeam) {
-      const response: AuthResponse = {
-        success: false,
-        message: 'Team with this name already exists'
-      };
-      res.status(400).json(response);
-      return;
-    }
-
-    // Check if any of the emails are already registered
-    const emailExists = await User.findOne({ emails: { $in: emails } });
-    if (emailExists) {
-      const response: AuthResponse = {
-        success: false,
-        message: 'One or more email addresses are already registered'
-      };
-      res.status(400).json(response);
-      return;
-    }
-
-    // Create new team
-    const team = await User.create({
-      team_name,
-      roll_nos,
-      emails
-    });
-
-    const response: AuthResponse = {
-      success: true,
-      message: 'Team created successfully',
-      team: {
-        team_name: team.team_name,
-        roll_nos: team.roll_nos,
-        emails: team.emails
+    const userData = req.body;
+    // Check if any email already exists in another team
+    if (Array.isArray(userData.emails) && userData.emails.length > 0) {
+      const existingTeam = await User.findOne({ emails: { $in: userData.emails } });
+      if (existingTeam) {
+        return res.status(400).json({ error: 'One or more emails are already registered with another team.' });
       }
-    };
-    res.status(201).json(response);
+    }
+    const user = new User(userData);
+    await user.save();
+    res.status(201).json({ message: 'User added successfully', user });
   } catch (error) {
-    console.error('Add team error:', error);
+    console.error('Add teams error:', error);
     const response: AuthResponse = {
       success: false,
-      message: 'Error adding team'
+      message: 'Error adding teams'
     };
     res.status(500).json(response);
   }
