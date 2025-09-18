@@ -3,6 +3,9 @@ import cookieParser from 'cookie-parser';
 import type { Express, Request, Response } from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
+import expressWinston from 'express-winston';
+import logger from './utils/logger.js';
+import { getLogs } from './controller/logController.js';
 import connectDB from './db/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -28,6 +31,16 @@ app.use(cors({
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
+
+// Request logging middleware
+app.use(expressWinston.logger({
+  winstonInstance: logger,
+  meta: true,
+  msg: 'HTTP {{req.method}} {{req.url}}',
+  expressFormat: true,
+  colorize: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -41,6 +54,9 @@ app.use('/submission', submissionRoutes);
 app.use('/admin/auth', adminAuthRoutes);
 app.use('/admin', adminProtect, adminRoutes);
 
+// Admin logs route (protected)
+app.get('/admin/logs', adminProtect, getLogs);
+
 // Test protected route
 app.get('/protected', protect, (req: Request, res: Response) => {
   res.json({
@@ -52,7 +68,7 @@ app.get('/protected', protect, (req: Request, res: Response) => {
 
 // Default route
 app.get('/', (req: Request, res: Response) => {
-  res.send('Express + TypeScript Server is running');
+  res.send('Codenvibe backend Server is running');
 });
 
 

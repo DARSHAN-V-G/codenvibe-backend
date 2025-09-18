@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import Question from '../models/question.js';
 import SubmissionLog, { SubmissionStatus } from '../models/submissionlog.js';
 import axios from 'axios';
+import { logger } from '../utils/logger.js';
 dotenv.config();
 
 const COMPILER_URL = process.env.COMPILER_URL;
@@ -45,17 +46,44 @@ export const submitCode = async (req: Request, res: Response) => {
 	try {
 		const { code, questionid } = req.body;
         const teamid = req.user?.userId;
+		logger.info('Code submission received', { 
+			teamId: teamid,
+			questionId: questionid,
+			codeLength: code?.length
+		});
+
 		if (!code || !questionid || !teamid) {
+			logger.warn('Invalid submission request', {
+				hasCode: !!code,
+				hasQuestionId: !!questionid,
+				hasTeamId: !!teamid
+			});
 			return res.status(400).json({ error: 'Missing required fields.' });
 		}
 
 		// Get testCases from Question schema
 		const question = await Question.findById(questionid);
 		if (!question) {
+			logger.warn('Submission attempt for non-existent question', { 
+				questionId: questionid,
+				teamId: teamid
+			});
 			return res.status(404).json({ error: 'Question not found.' });
 		}
+		logger.info('Question found for submission', { 
+			questionId: questionid,
+			year: question.year,
+			number: question.number
+		});
+
 		const testCases = question.test_cases;
 		if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
+			logger.error('Question found without valid test cases', { 
+				questionId: questionid,
+				testCasesExists: !!testCases,
+				isArray: Array.isArray(testCases),
+				count: testCases?.length
+			});
 			return res.status(400).json({ error: 'No test cases found for this question.' });
 		}
 
@@ -65,7 +93,12 @@ export const submitCode = async (req: Request, res: Response) => {
 			teamid: new mongoose.Types.ObjectId(teamid),
 			questionid: new mongoose.Types.ObjectId(questionid)
 		});
+
 		if (!submission) {
+			logger.info('Creating new submission record', { 
+				teamId: teamid,
+				questionId: questionid
+			});
 			submission = await Submission.create({
 				teamid: new mongoose.Types.ObjectId(teamid),
 				questionid: new mongoose.Types.ObjectId(questionid),
@@ -73,18 +106,45 @@ export const submitCode = async (req: Request, res: Response) => {
 				testcases_passed: 0,
 				all_passed: false
 			});
+		} else {
+			logger.info('Found existing submission record', { 
+				submissionId: submission._id,
+				previousTestsPassed: submission.testcases_passed,
+				wasAllPassed: submission.all_passed
+			});
 		}
 
 		// Send code and testCases to compiler service using axios
-		const axiosResponse = await axios.post(`${COMPILER_URL}/submit-python`, {
-			code,
-			testCases,
-			submissionid: submission._id
-		}, {
-			headers: { 'Content-Type': 'application/json' }
+		logger.info('Sending code to compiler service', { 
+			submissionId: submission._id,
+			testCasesCount: testCases.length,
+			compilerUrl: COMPILER_URL
 		});
-		const result = axiosResponse.data;
+
+		let result;
+		try {
+			const axiosResponse = await axios.post(`${COMPILER_URL}/submit-python`, {
+				code,
+				testCases,
+				submissionid: submission._id
+			}, {
+				headers: { 'Content-Type': 'application/json' }
+			});
+			result = axiosResponse.data;
+		} catch (compilerError) {
+			logger.error('Compiler service communication error', {
+				error: compilerError instanceof Error ? compilerError.message : 'Unknown error',
+				submissionId: submission._id,
+				compilerUrl: COMPILER_URL
+			});
+			throw compilerError;
+		}
+
 		if (!result.results) {
+			logger.error('Invalid compiler service response', { 
+				submissionId: submission._id,
+				response: result
+			});
 			return res.status(500).json({ error: 'Compiler service error', details: result });
 		}
 
@@ -98,6 +158,13 @@ export const submitCode = async (req: Request, res: Response) => {
 
 		// Calculate score
 		const passedCount = result.results.filter((r: any) => r.passed).length;
+		
+		logger.info('Code execution results', { 
+			submissionId: submission._id,
+			passedCount,
+			totalTests: result.results.length,
+			hasSyntaxError,
+		});
 		// total testcases
 		
 
@@ -114,6 +181,14 @@ export const submitCode = async (req: Request, res: Response) => {
 			status = SubmissionStatus.WRONG_SUBMISSION;
 		}
 		
+		logger.info('Creating submission log entry', {
+			submissionId: submission._id,
+			status,
+			passedCount,
+			totalTests: testCases.length,
+			hasSyntaxError
+		});
+
 		await SubmissionLog.create({
 			submissionid: submission._id,
 			status
@@ -121,6 +196,12 @@ export const submitCode = async (req: Request, res: Response) => {
 
 		// If already solved, don't update anything except submission record
 		if (submission.all_passed) {
+			logger.info('Updating previously solved submission', {
+				submissionId: submission._id,
+				newPassedCount: passedCount,
+				previouslyPassed: submission.testcases_passed
+			});
+
 			// Just update the code and test cases passed for record keeping
 			submission = await Submission.findByIdAndUpdate(
 				submission._id,
@@ -131,6 +212,10 @@ export const submitCode = async (req: Request, res: Response) => {
 				{ new: true }
 			);
 			if (!submission) {
+				logger.error('Failed to update existing submission', {
+					teamId: teamid,
+					questionId: questionid
+				});
 				throw new Error('Failed to update submission');
 			}
 			return res.json({ 
@@ -143,6 +228,12 @@ export const submitCode = async (req: Request, res: Response) => {
 
 		// Only increment wrong_submission if not previously solved
 		const shouldIncrementWrong = !allPassed;
+		logger.info('Processing new submission result', {
+			submissionId: submission._id,
+			allPassed,
+			shouldIncrementWrong,
+			passedCount
+		});
 
 		// Update submission and get the updated document
 		submission = await Submission.findByIdAndUpdate(

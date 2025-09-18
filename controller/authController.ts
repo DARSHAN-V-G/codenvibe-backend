@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import User from '../models/userModel.js';
 import { generateOTP, sendOTP, generateToken, sendAuthResponse, type AuthResponse } from '../utils/authUtils.js';
 import type { Document, Types } from 'mongoose';
+import { logger } from '../utils/logger.js';
 
 interface OTPDocument {
   code: string;
@@ -20,8 +21,10 @@ interface TeamDocument extends Document {
 export const requestLogin = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
+    logger.info('Login request received', { email });
 
     if (!email) {
+      logger.warn('Login request missing email');
       const response: AuthResponse = {
         success: false,
         message: 'Email is required'
@@ -33,6 +36,7 @@ export const requestLogin = async (req: Request, res: Response) => {
     
     const team = await User.findOne({ emails: email }) as TeamDocument;
     if (!team) {
+      logger.warn('Login attempt with non-existent team email', { email });
       const response: AuthResponse = {
         success: false,
         message: 'No team found with this email. Please contact administrator for access.'
@@ -40,6 +44,7 @@ export const requestLogin = async (req: Request, res: Response) => {
       res.status(404).json(response);
       return;
     }
+    logger.info('Team found for login request', { teamId: team._id, teamName: team.team_name });
 
     // Generate OTP
     const otp = generateOTP();
@@ -63,7 +68,11 @@ export const requestLogin = async (req: Request, res: Response) => {
     };
     res.status(200).json(response);
   } catch (error) {
-    console.error('Login request error:', error);
+    logger.error('Login request error', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      email: req.body.email 
+    });
     const response: AuthResponse = {
       success: false,
       message: 'Error processing login request'
@@ -75,8 +84,13 @@ export const requestLogin = async (req: Request, res: Response) => {
 export const verifyOTP = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
+    logger.info('OTP verification request received', { email });
 
     if (!email || !otp) {
+      logger.warn('OTP verification missing required fields', { 
+        email: email ? 'provided' : 'missing',
+        otp: otp ? 'provided' : 'missing'
+      });
       const response: AuthResponse = {
         success: false,
         message: 'Email and OTP are required'

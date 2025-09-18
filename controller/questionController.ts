@@ -4,10 +4,13 @@ import Question from '../models/question.js';
 import type { IQuestion } from '../models/question.js';
 import User from '../models/userModel.js';
 import Submission from '../models/submission.js';
+import { logger } from '../utils/logger.js';
 
 interface IAddQuestionRequest {
   year: number;
   number : number;
+  title: string;
+  description: string;
   correct_code: string;
   incorrect_code: string;
   test_cases: Array<{
@@ -18,6 +21,8 @@ interface IAddQuestionRequest {
 
 interface IUpdateQuestionRequest {
   year?: number;
+  title?: string;
+  description?: string;
   correct_code?: string;
   incorrect_code?: string;
   test_cases?: Array<{
@@ -29,9 +34,15 @@ interface IUpdateQuestionRequest {
 // Get all questions (admin only)
 export const getAllQuestions = async (req: Request, res: Response) => {
   try {
+    logger.info('Fetching all questions');
     const questions = await Question.find();
+    logger.info('Questions retrieved successfully', { count: questions.length });
     res.json({ success: true, questions });
   } catch (error) {
+    logger.error('Error fetching all questions', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
     res.status(500).json({ success: false, error: errMsg });
   }
@@ -39,25 +50,56 @@ export const getAllQuestions = async (req: Request, res: Response) => {
 
 export const addQuestion = async (req: Request<{}, {}, IAddQuestionRequest>, res: Response) => {
   try {
-    const { year, correct_code, incorrect_code, test_cases } = req.body;
+    logger.info('Adding new question', { year: req.body.year });
+    const { year, title, description, correct_code, incorrect_code, test_cases } = req.body;
     if (
       typeof year !== 'number' ||
+      typeof title !== 'string' ||
+      typeof description !== 'string' ||
       typeof correct_code !== 'string' ||
       typeof incorrect_code !== 'string' ||
       !Array.isArray(test_cases) ||
       test_cases.length === 0 ||
       !test_cases.every(tc => typeof tc.input === 'string' && typeof tc.expectedOutput === 'string')
     ) {
-      return res.status(400).json({ error: 'Missing or invalid required fields: year, correct_code, incorrect_code, test_cases' });
+      logger.warn('Invalid question data provided', {
+        year: typeof year,
+        hasTitle: !!title,
+        hasDescription: !!description,
+        hasCorrectCode: !!correct_code,
+        hasIncorrectCode: !!incorrect_code,
+        testCasesCount: test_cases?.length
+      });
+      return res.status(400).json({ error: 'Missing or invalid required fields: year, title, description, correct_code, incorrect_code, test_cases' });
     }
 
     // Find total number of questions for the same year
     const count = await Question.countDocuments({ year });
     const number = count + 1;
 
-    const question = await Question.create({ year, correct_code, incorrect_code, test_cases, number });
+    const question = await Question.create({ 
+      year, 
+      title,
+      description,
+      correct_code, 
+      incorrect_code, 
+      test_cases, 
+      number 
+    });
+    logger.info('Question created successfully', { 
+      questionId: question._id,
+      year,
+      number,
+      title,
+      testCasesCount: test_cases.length 
+    });
     res.status(201).json(question);
   } catch (error) {
+    logger.error('Error creating question', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      year: req.body.year
+    });
     const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
     res.status(400).json({ error: errMsg });
   }
@@ -67,10 +109,29 @@ export const addQuestion = async (req: Request<{}, {}, IAddQuestionRequest>, res
 export const updateQuestion = async (req: Request<{ id: string }, {}, IUpdateQuestionRequest>, res: Response) => {
   try {
     const { id } = req.params;
+    logger.info('Updating question', { 
+      questionId: id,
+      updatedFields: Object.keys(req.body)
+    });
+
     const updated = await Question.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ error: 'Question not found' });
+    if (!updated) {
+      logger.warn('Attempted to update non-existent question', { questionId: id });
+      return res.status(404).json({ error: 'Question not found' });
+    }
+    
+    logger.info('Question updated successfully', { 
+      questionId: id,
+      year: updated.year,
+      testCasesCount: updated.test_cases?.length 
+    });
     res.json(updated);
   } catch (error) {
+    logger.error('Error updating question', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      questionId: req.params.id
+    });
     const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
     res.status(400).json({ error: errMsg });
   }
@@ -81,17 +142,35 @@ export const updateQuestion = async (req: Request<{ id: string }, {}, IUpdateQue
 export const getQuestions = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
+    logger.info('Fetching questions for user', { userId });
+
     if (!userId) {
+      logger.warn('Unauthenticated question access attempt');
       return res.status(400).json({ error: 'User ID not found in request. Make sure you are authenticated.' });
     }
+
     const user = await User.findById(userId);
     if (!user) {
+      logger.warn('Question access attempt with invalid user ID', { userId });
       return res.status(404).json({ error: 'User not found.' });
     }
+
     const year = user.year;
-    const questions = await Question.find({ year: Number(year) }, '_id');
+    logger.info('Fetching questions for year', { year, userId });
+    
+    const questions = await Question.find({ year: Number(year) }, '_id title description');
+    logger.info('Questions retrieved successfully', { 
+      userId,
+      year,
+      questionCount: questions.length
+    });
     res.json(questions);
   } catch (error) {
+    logger.error('Error fetching questions', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: req.user?.userId
+    });
     const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
     res.status(400).json({ error: errMsg });
   }
