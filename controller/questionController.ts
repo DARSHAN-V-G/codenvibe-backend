@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import Question from '../models/question.js';
 import type { IQuestion } from '../models/question.js';
 import User from '../models/userModel.js';
+import Submission from '../models/submission.js';
 
 interface IAddQuestionRequest {
   year: number;
@@ -115,7 +116,19 @@ export const getQuestionById = async (req: Request<{ id: string }>, res: Respons
     if (question.year !== user.year) {
       return res.status(403).json({ error: 'Access denied. Question is not for your year.' });
     }
-    res.json(question);
+
+    // Check for existing submission or create a new one
+    const submission = await Submission.findOne({
+      teamid: userId,
+      questionid: id
+    }) || await Submission.create({
+      teamid: userId,
+      questionid: id
+    });
+
+    res.json({ 
+      question
+    });
   } catch (error) {
     const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
     res.status(400).json({ error: errMsg });

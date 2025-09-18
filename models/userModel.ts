@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema({
     type: [Number],
     default: []
   },
+  testcases_score: {
+    type: [Number],
+    default: []
+  },
   year: {
     type: Number,
     required: true
