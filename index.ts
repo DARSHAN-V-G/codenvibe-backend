@@ -1,6 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import type { Express, Request, Response } from 'express';
+import cors from 'cors';
 import * as dotenv from 'dotenv';
 import connectDB from './db/db.js';
 import authRoutes from './routes/authRoutes.js';
@@ -21,6 +22,12 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+app.use(cors({
+  origin: 'http://localhost:5173', // Frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

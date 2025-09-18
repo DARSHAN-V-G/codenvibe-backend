@@ -8,7 +8,7 @@ import {
   getAllQuestions
 } from '../controller/questionController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { adminProtect } from 'middleware/adminMiddleware.js';
+import { adminProtect } from '../middleware/adminMiddleware.js';
 const router = express.Router();
 router.get('/all',adminProtect,getAllQuestions);
 router.post('/add',addQuestion);

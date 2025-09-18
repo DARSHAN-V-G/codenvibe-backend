@@ -40,14 +40,15 @@ export const addTeam = async (req: Request, res: Response) => {
 
 export const getAllTeams = async (_req: Request, res: Response) => {
   try {
-    const teams = await User.find({}, 'team_name roll_nos emails');
+    const teams = await User.find({}, 'team_name roll_nos emails members');
     
     res.status(200).json({
       success: true,
       teams: teams.map(team => ({
         team_name: team.team_name,
         roll_nos: team.roll_nos,
-        emails: team.emails
+        emails: team.emails,
+        members : team.members
       }))
     });
   } catch (error) {
