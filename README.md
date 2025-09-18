@@ -2,6 +2,8 @@
 
 ## Authentication Routes
 
+### Team Authentication
+
 ### POST `/auth/request-login`
 **Description:** Request login OTP for a team member.
 
@@ -60,6 +62,120 @@
     "message": "Invalid OTP"
   }
   ```
+
+---
+
+## Admin Authentication Routes
+
+### POST `/admin/auth/register`
+**Description:** Register a new admin account.
+
+**Request Body:**
+```json
+{
+  "username": "adminuser",
+  "email": "admin@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "message": "Admin registered successfully",
+    "admin": {
+      "username": "adminuser",
+      "email": "admin@example.com"
+    }
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Username or email already exists."
+  }
+  ```
+
+---
+
+### POST `/admin/auth/login`
+**Description:** Login as an admin.
+
+**Request Body:**
+```json
+{
+  "username": "adminuser",
+  "password": "securepassword123"
+}
+```
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "message": "Login successful"
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "Invalid credentials."
+  }
+  ```
+
+**Note:** Sets `codenvibe_admin_token` cookie on successful login.
+
+---
+
+### POST `/admin/auth/logout`
+**Description:** Logout admin account.
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "message": "Logout successful"
+  }
+  ```
+
+**Note:** Clears `codenvibe_admin_token` cookie.
+
+---
+
+### GET `/question/all`
+**Description:** Get all questions (admin access only).
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "success": true,
+    "questions": [
+      {
+        "year": 1,
+        "number": 1,
+        "correct_code": "...",
+        "incorrect_code": "...",
+        "test_cases": [
+          {
+            "input": "input1",
+            "expectedOutput": "output1"
+          }
+        ]
+      }
+    ]
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "success": false,
+    "error": "Admin authentication required."
+  }
+  ```
+
+**Note:** Requires valid admin authentication via `codenvibe_admin_token` cookie.
 
 ---
 
@@ -309,11 +425,33 @@
 
 ---
 
-## Notes
+## WebSocket Support
 
-- All `/admin/*` routes require authentication via cookie (`codenvibe_token`).
-- All `/question/getQuestion`, `/question/question/:id`, `/submission/submit`, and `/protected` routes require authentication.
-- OTP-based authentication is used for login.
-- Team and question management is year-based.
+The server includes WebSocket support for real-time team score updates. Connect to:
+```
+ws://localhost:{PORT}
+```
+
+**Message Format:**
+```json
+{
+  "type": "scores",
+  "teams": [
+    {
+      "team_name": "Team Name",
+      "score": 100
+    }
+  ]
+}
+```
 
 ---
+
+## Authentication Notes
+
+- Team authentication uses OTP sent via email
+- Admin authentication uses username/password with JWT stored in `codenvibe_admin_token` cookie
+- Protected routes require appropriate authentication
+- Admin routes require `codenvibe_admin_token` cookie
+- Question and submission routes require team authentication
+- Team and question management is year-based

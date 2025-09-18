@@ -1,3 +1,4 @@
+
 import type { Request, Response } from 'express';
 import Question from '../models/question.js';
 import type { IQuestion } from '../models/question.js';
@@ -24,6 +25,16 @@ interface IUpdateQuestionRequest {
   }>;
 }
 
+// Get all questions (admin only)
+export const getAllQuestions = async (req: Request, res: Response) => {
+  try {
+    const questions = await Question.find();
+    res.json({ success: true, questions });
+  } catch (error) {
+    const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
+    res.status(500).json({ success: false, error: errMsg });
+  }
+};
 
 export const addQuestion = async (req: Request<{}, {}, IAddQuestionRequest>, res: Response) => {
   try {

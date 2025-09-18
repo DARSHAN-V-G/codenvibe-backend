@@ -5,6 +5,8 @@ import * as dotenv from 'dotenv';
 import connectDB from './db/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import adminAuthRoutes from './routes/adminAuthRoutes.js';
+import { adminProtect } from './middleware/adminMiddleware.js';
 import questionRoutes from './routes/questionRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
@@ -29,7 +31,8 @@ app.use('/question',questionRoutes);
 app.use('/submission', submissionRoutes);
 
 // Admin routes (protected)
-app.use('/admin', adminRoutes);
+app.use('/admin/auth', adminAuthRoutes);
+app.use('/admin', adminProtect, adminRoutes);
 
 // Test protected route
 app.get('/protected', protect, (req: Request, res: Response) => {
