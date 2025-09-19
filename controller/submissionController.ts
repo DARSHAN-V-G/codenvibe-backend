@@ -8,37 +8,20 @@ import Question from '../models/question.js';
 import SubmissionLog, { SubmissionStatus } from '../models/submissionlog.js';
 import axios from 'axios';
 import { logger } from '../utils/logger.js';
+import { broadcastScores } from '../index.js';
 dotenv.config();
 
 const COMPILER_URL = process.env.COMPILER_URL;
 
+import { 
+  computeScore, 
+  checkForSyntaxErrors, 
+  determineSubmissionStatus, 
+  updateTeamScore, 
+  calculatePassedCount,
+  type CompilerResponse 
+} from '../utils/submissionUtils.js';
 
-function decayFactor(tSeconds: number, maxSeconds = 3600, lambda = 0.001) {
-	if (tSeconds >= maxSeconds) return 0;
-	const expMax = Math.exp(-lambda * maxSeconds);
-	return (Math.exp(-lambda * tSeconds) - expMax) / (1 - expMax);
-}
-
-function computeScore(
-	passedCount: number,
-	totalTestcases: number,
-	baseScore: number,
-	tSeconds: number,
-	syntaxErrors: number,
-	wrongSubmissions: number
-) {
-	const factor = decayFactor(tSeconds);
-
-	// Raw score from testcases
-	let rawScore = (passedCount / totalTestcases) * baseScore;
-
-	// Apply penalties
-	const penalty = (syntaxErrors * 5) + (wrongSubmissions * 10); // tweak weights as needed
-	rawScore = Math.max(0, rawScore - penalty);
-
-	// Apply decay factor
-	return rawScore * factor;
-}
 
 
 
@@ -148,16 +131,11 @@ export const submitCode = async (req: Request, res: Response) => {
 			return res.status(500).json({ error: 'Compiler service error', details: result });
 		}
 
-		// Check for syntax errors in the results
-		const hasSyntaxError = result.results.some((r: any) => {
-			const actualOutput = String(r.actualOutput || '');
-			return ['SyntaxError', 'NameError', 'TypeError', 'IndentationError'].some(
-				errorType => actualOutput.includes(errorType)
-			);
-		});
-
-		// Calculate score
-		const passedCount = result.results.filter((r: any) => r.passed).length;
+		// Process results using utility functions
+		const hasSyntaxError = checkForSyntaxErrors(result.results);
+		const passedCount = calculatePassedCount(result.results);
+		const allPassed = passedCount === testCases.length;
+		const status = determineSubmissionStatus(hasSyntaxError, allPassed);
 		
 		logger.info('Code execution results', { 
 			submissionId: submission._id,
@@ -165,22 +143,7 @@ export const submitCode = async (req: Request, res: Response) => {
 			totalTests: result.results.length,
 			hasSyntaxError,
 		});
-		// total testcases
-		
 
-		// Check if all tests passed
-		const allPassed = passedCount === testCases.length;
-
-		// Create submission log entry
-		let status: SubmissionStatus;
-		if (hasSyntaxError) {
-			status = SubmissionStatus.SYNTAX_ERROR;
-		} else if (allPassed) {
-			status = SubmissionStatus.ACCEPTED;
-		} else {
-			status = SubmissionStatus.WRONG_SUBMISSION;
-		}
-		
 		logger.info('Creating submission log entry', {
 			submissionId: submission._id,
 			status,
@@ -255,47 +218,24 @@ export const submitCode = async (req: Request, res: Response) => {
 
 		// Only calculate new score if question wasn't previously solved
 		let newScore = 0;
-		if (!submission.all_passed && allPassed) {
+		if (!submission.all_passed) {
 			const totalTestcases = testCases.length;
-			const baseScore = 100;
 			const elapsedSeconds = Math.floor((Date.now() - submission.created_at.getTime()) / 1000);
-			newScore = computeScore(passedCount, totalTestcases, baseScore, elapsedSeconds, submission.syntax_error, submission.wrong_submission);
+			newScore = computeScore(passedCount, totalTestcases, elapsedSeconds, submission.syntax_error, submission.wrong_submission);
 		}
 
-		// Only update team score if the question wasn't previously solved and is now solved
-		if (!submission.all_passed && allPassed) {
-			const team = await User.findById(teamid);
-			if (team) {
-				const qNum = question.number;
-				if (typeof qNum === 'number' && qNum > 0) {
-					const idx = qNum - 1;
-
-					// Ensure arrays have enough length, padding with zeros if needed
-					let testcasesPassedArr = Array.isArray(team.testcases_passed) ? [...team.testcases_passed] : [];
-					let testcasesScoreArr = Array.isArray(team.testcases_score) ? [...team.testcases_score] : [];
-					
-					// Pad arrays with zeros if needed
-					while (testcasesPassedArr.length < qNum) {
-						testcasesPassedArr.push(0);
-					}
-					while (testcasesScoreArr.length < qNum) {
-						testcasesScoreArr.push(0);
-					}
-
-					// Update values at the correct index
-					testcasesPassedArr[idx] = Math.max(testcasesPassedArr[idx] ?? 0, passedCount);
-					testcasesScoreArr[idx] = Math.max(testcasesScoreArr[idx] ?? 0, newScore);
-
-					// Calculate total score as sum of testcases_score array
-					const totalScore = testcasesScoreArr.reduce((sum, score) => sum + (score || 0), 0);
-
-					await User.findByIdAndUpdate(teamid, {
-						score: totalScore,
-						testcases_passed: testcasesPassedArr,
-						testcases_score: testcasesScoreArr
-					});
-				}
-			}
+		// Only update team score if the question wasn't previously solved
+		if (!submission.all_passed && typeof question.number === 'number' && question.number > 0) {
+			await updateTeamScore(teamid, question.number, passedCount, newScore);
+			
+			// Broadcast updated scores to all connected clients
+			await broadcastScores();
+			logger.info('Broadcasted updated scores', { 
+				teamId: teamid, 
+				questionNumber: question.number,
+				passedCount,
+				newScore 
+			});
 		}
 
 		if (!submission) {
@@ -303,6 +243,12 @@ export const submitCode = async (req: Request, res: Response) => {
 		}
 		res.json({ submissionid: submission._id, passedCount, newScore, results: result.results });
 	} catch (error) {
+		logger.error('Error while submitting code', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      QuestionId: req.body.questionid,
+	  teamId: req.user?.userId
+    });
 		const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
 		res.status(500).json({ error: errMsg });
 	}

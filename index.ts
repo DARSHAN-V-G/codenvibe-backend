@@ -15,7 +15,7 @@ import questionRoutes from './routes/questionRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
 import http from 'http';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import User from './models/userModel.js';
 
 dotenv.config();
@@ -32,7 +32,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
-// Request logging middleware
+
 app.use(expressWinston.logger({
   winstonInstance: logger,
   meta: true,
@@ -45,7 +45,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 connectDB();
-// Public routes
+
 app.use('/auth', authRoutes);
 app.use('/question',questionRoutes);
 app.use('/submission', submissionRoutes);
@@ -72,15 +72,41 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 
-// WebSocket: broadcast all team scores
-wss.on('connection', async (ws) => {
+// Function to broadcast scores to all connected clients or a specific client
+async function broadcastScores(targetClient?: WebSocket) {
   try {
-    const teams = await User.find({}, 'team_name score');
-    ws.send(JSON.stringify({ type: 'scores', teams }));
+    const teams = await User.find({}, 'team_name score').sort('-score');
+    const message = JSON.stringify({ type: 'scores', teams });
+
+    if (targetClient) {
+      // Send to specific client if provided
+      if (targetClient.readyState === WebSocket.OPEN) {
+        targetClient.send(message);
+      }
+    } else {
+      // Broadcast to all clients
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      });
+    }
   } catch (err) {
-    ws.send(JSON.stringify({ type: 'error', message: 'Could not fetch scores.' }));
+    console.error('Error broadcasting scores:', err);
+    if (targetClient && targetClient.readyState === WebSocket.OPEN) {
+      targetClient.send(JSON.stringify({ type: 'error', message: 'Could not fetch scores.' }));
+    }
   }
+}
+
+// WebSocket: send scores when a client connects
+wss.on('connection', (ws) => {
+  // Send initial scores to the new client
+  broadcastScores(ws);
 });
+
+
+export { broadcastScores };
 
 server.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
