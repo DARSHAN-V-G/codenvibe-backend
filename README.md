@@ -65,6 +65,43 @@
 
 ---
 
+### GET `/questions/:id/logs`
+**Description:** Get submission logs for a specific question for the authenticated user.
+
+**Authentication Required:** Yes (requires user JWT token)
+
+**URL Parameters:**
+- `id`: Question ID (MongoDB ObjectId)
+
+**Response:**
+- Success:  
+  ```json
+  {
+    "logs": [
+      {
+        "submissionid": "submission_id",
+        "message": "Submission attempt details",
+        "createdAt": "2025-09-19T10:00:00Z",
+        "testcase_results": [...]
+      }
+    ],
+    "submission": {
+      "testcases_passed": 3,
+      "all_passed": false,
+      "syntax_error": false,
+      "wrong_submission": true
+    }
+  }
+  ```
+- Error:  
+  ```json
+  {
+    "error": "User ID not found in request. Make sure you are authenticated."
+  }
+  ```
+
+---
+
 ## Admin Authentication Routes
 
 ### POST `/admin/auth/register`
@@ -181,6 +218,46 @@
 
 ## Admin Routes (Protected)
 
+### GET `/admin/logs`
+**Description:** Get server logs (admin access only)
+
+**Query Parameters:**
+```json
+{
+  "type": "combined|error",  // optional, defaults to "combined"
+  "lines": 1000             // optional, defaults to 1000
+}
+```
+
+**Response:**
+- Success (JSON):  
+  ```json
+  [
+    {
+      "timestamp": "2024-01-01T00:00:00.000Z",
+      "level": "info|error|warn|debug",
+      "message": "Log message",
+      "context": { ... }  // optional
+    }
+  ]
+  ```
+- Success (HTML):  
+  Returns an interactive HTML page with log viewer if `Accept: text/html` header is present
+
+- Error:  
+  ```json
+  {
+    "error": "Failed to retrieve logs",
+    "details": "Error message"
+  }
+  ```
+
+**Note:** 
+- Requires admin authentication via `codenvibe_admin_token` cookie
+- Can return either JSON or HTML format based on Accept header
+
+---
+
 ### POST `/admin/add-team`
 **Description:** Add a new team.
 
@@ -277,6 +354,9 @@
 ```json
 {
   "year": 1,
+  "number": 1,
+  "title": "Question Title",
+  "description": "Question Description",
   "correct_code": "print('Hello')",
   "incorrect_code": "print('Hi')",
   "test_cases": [
@@ -354,14 +434,17 @@
 ---
 
 ### GET `/question/getQuestion`
-**Description:** Get all question IDs for the authenticated user's year.
+**Description:** Get all questions for the authenticated user's year.
 
 **Response:**
 - Success:  
   ```json
   [
-    { "_id": "questionId1" },
-    { "_id": "questionId2" }
+    {
+      "_id": "questionId1",
+      "title": "Question Title",
+      "description": "Question Description"
+    }
   ]
   ```
 - Error:  
@@ -379,7 +462,16 @@
 **Response:**
 - Success:  
   ```json
-  { ...question object... }
+  {
+    "question": {
+      "_id": "questionId",
+      "year": 1,
+      "number": 1,
+      "title": "Question Title", 
+      "description": "Question Description",
+      "test_cases": [...]
+    }
+  }
   ```
 - Error:  
   ```json

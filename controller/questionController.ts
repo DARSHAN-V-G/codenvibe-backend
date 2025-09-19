@@ -4,7 +4,62 @@ import Question from '../models/question.js';
 import type { IQuestion } from '../models/question.js';
 import User from '../models/userModel.js';
 import Submission from '../models/submission.js';
+import SubmissionLog from '../models/submissionlog.js';
 import { logger } from '../utils/logger.js';
+import mongoose from 'mongoose';
+
+export const getQuestionLogs = async (req: Request<{ id: string }>, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const questionId = req.params.id;
+
+    logger.info('Fetching question logs', { userId, questionId });
+
+    if (!userId) {
+      logger.warn('Unauthenticated question logs access attempt');
+      return res.status(400).json({ error: 'User ID not found in request. Make sure you are authenticated.' });
+    }
+
+    // First find the submission for this user and question
+    const submission = await Submission.findOne({
+      userid: new mongoose.Types.ObjectId(userId),
+      questionid: new mongoose.Types.ObjectId(questionId)
+    });
+
+    if (!submission) {
+      logger.info('No submission found for question', { userId, questionId });
+      return res.status(200).json({ logs: [] });
+    }
+
+    // Get all submission logs for this submission
+    const logs = await SubmissionLog.find({
+      submissionid: submission._id
+    })
+    .sort({ createdAt: -1 }) // Sort in reverse chronological order
+    .lean(); // Convert to plain JavaScript objects
+
+    logger.info('Question logs retrieved successfully', {
+      userId,
+      questionId,
+      submissionId: submission._id,
+      logsCount: logs.length
+    });
+
+    res.json({ 
+      logs,
+      Question_viewded_at: submission.created_at
+    });
+  } catch (error) {
+    logger.error('Error fetching question logs', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: req.user?.userId,
+      questionId: req.params.id
+    });
+    const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
+    res.status(500).json({ error: errMsg });
+  }
+};
 
 interface IAddQuestionRequest {
   year: number;
@@ -217,8 +272,10 @@ export const getQuestionById = async (req: Request<{ id: string }>, res: Respons
 
 import axios from 'axios';
 import dotenv from 'dotenv';
+
 dotenv.config();
 const COMPILER_URL = process.env.COMPILER_URL;
+
 
 export const checkQuestion = async (req: Request<{ id: string }>, res: Response) => {
   try {

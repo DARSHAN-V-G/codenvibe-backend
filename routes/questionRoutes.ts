@@ -5,7 +5,8 @@ import {
   checkQuestion,
   getQuestions,
   getQuestionById,
-  getAllQuestions
+  getAllQuestions,
+  getQuestionLogs
 } from '../controller/questionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { adminProtect } from '../middleware/adminMiddleware.js';
@@ -14,6 +15,7 @@ router.get('/all',adminProtect,getAllQuestions);
 router.post('/add',addQuestion);
 router.put('/update/:id', updateQuestion);
 router.post('/check/:id', checkQuestion);
+router.post('/logs/:id',protect,getQuestionLogs);
 router.get('/getQuestion', protect,getQuestions);
 router.get('/question/:id', protect,getQuestionById);
 
