@@ -145,11 +145,11 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const token = generateToken(team._id.toString());
 
     // Set token in cookie
-res.cookie('codenvibe_token', token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // only force secure in prod
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-});
+    res.cookie('codenvibe_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
+    });
 
     // Send response with team details (token is now in cookie)
     const response: AuthResponse = {

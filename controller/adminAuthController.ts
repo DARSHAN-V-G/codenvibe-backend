@@ -41,9 +41,8 @@ export const loginAdmin = async (req: Request, res: Response) => {
     const token = jwt.sign({ adminId: admin._id }, JWT_SECRET, { expiresIn: '1h' });
     res.cookie(ADMIN_TOKEN_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 1000 // 1 hour
+      secure: true,
+      sameSite: 'none'
     });
     res.json({ message: 'Login successful' });
   } catch (err) {
