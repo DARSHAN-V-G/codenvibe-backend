@@ -34,10 +34,10 @@ export function computeScore(
   wrongSubmissions: number
 ) {
   // --- Weights ---
-  const BASE = 5;
-  const TIME_MAX = 8;
-  const SYNTAX_MAX = 10;
-  const WRONG_MAX = 7;
+  const BASE = 12;
+  const TIME_MAX = 14;
+  const SYNTAX_MAX = 14;
+  const WRONG_MAX = 10;
 
   // --- Limits ---
   const MAX_TIME = 45 * 60; // 45 mins in seconds
