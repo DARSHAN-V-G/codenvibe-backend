@@ -26,7 +26,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend origin
+  origin: [ process.env.FRONTEND_URL || 'http://localhost:5173',process.env.ADMIN_URL || 'http://localhost:5174',], // Frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
