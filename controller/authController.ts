@@ -147,7 +147,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     // Set token in cookie
     res.cookie('codenvibe_token', token, {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: 'none'
     });
 
