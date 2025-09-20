@@ -54,13 +54,11 @@ export const requestLogin = async (req: Request, res: Response) => {
     const otpData: OTPDocument = {
       code: otp,
       generatedAt: now,
-      expiresAt: new Date(now.getTime() + 5 * 60000), // 5 minutes expiry
+      expiresAt: new Date(now.getTime() + 10 * 60000), // 5 minutes expiry
     };
     team.otp = otpData;
     await team.save();
-
-    // Send OTP via email to all team members
-    await Promise.all(team.emails.map(teamEmail => sendOTP(teamEmail, otp)));
+    await sendOTP(email, otp);
 
     const response: AuthResponse = {
       success: true,
