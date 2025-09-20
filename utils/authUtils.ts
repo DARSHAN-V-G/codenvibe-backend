@@ -79,31 +79,3 @@ export const verifyToken = (token: string): AuthTokenPayload | null => {
   }
 };
 
-export const clearAuthCookie = (res: Response): void => {
-  res.cookie('jwt', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 0,
-    path: '/'
-  });
-};
-
-export const sendAuthResponse = (res: Response, statusCode: number, token: string, team?: TeamInfo): void => {
-  // Set JWT token in HTTP-only cookie
-  res.cookie('jwt', token, {
-    
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Use secure in production
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours (matching JWT_EXPIRES_IN)
-  });
-
-  // Send response without including the token in the body
-  const response: AuthResponse = {
-    success: true,
-    message: 'Authentication successful',
-    team // Include team details if provided
-  };
-  res.status(statusCode).json(response);
-};

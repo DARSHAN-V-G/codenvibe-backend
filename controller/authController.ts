@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import User from '../models/userModel.js';
-import { generateOTP, sendOTP, generateToken, sendAuthResponse, type AuthResponse } from '../utils/authUtils.js';
+import { generateOTP, sendOTP, generateToken, type AuthResponse } from '../utils/authUtils.js';
 import type { Document, Types } from 'mongoose';
 import { logger } from '../utils/logger.js';
 
@@ -20,7 +20,7 @@ interface TeamDocument extends Document {
 
 export const logout = (req: Request, res: Response): void => {
   // Clear the JWT cookie
-  res.cookie('jwt', '', {
+  res.cookie('codenvibe_token', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     maxAge: 0,
@@ -78,7 +78,7 @@ export const requestLogin = async (req: Request, res: Response) => {
 
     const response: AuthResponse = {
       success: true,
-      message: 'OTP sent successfully to all team members'
+      message: 'OTP sent successfully.'
     };
     res.status(200).json(response);
   } catch (error) {
@@ -161,7 +161,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const token = generateToken(team._id.toString());
 
     // Set token in cookie
-    res.cookie('jwt', token, {
+    res.cookie('codenvibe_token', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none'
