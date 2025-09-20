@@ -92,6 +92,7 @@ export const clearAuthCookie = (res: Response): void => {
 export const sendAuthResponse = (res: Response, statusCode: number, token: string, team?: TeamInfo): void => {
   // Set JWT token in HTTP-only cookie
   res.cookie('jwt', token, {
+    
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // Use secure in production
     sameSite: 'strict',
