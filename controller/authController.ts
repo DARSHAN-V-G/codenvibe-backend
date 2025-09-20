@@ -18,6 +18,22 @@ interface TeamDocument extends Document {
   otp: OTPDocument | null;
 }
 
+export const logout = (req: Request, res: Response): void => {
+  // Clear the JWT cookie
+  res.cookie('jwt', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 0,
+    path: '/'
+  });
+
+  const response: AuthResponse = {
+    success: true,
+    message: 'Logged out successfully'
+  };
+  res.status(200).json(response);
+};
+
 export const requestLogin = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -145,7 +161,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const token = generateToken(team._id.toString());
 
     // Set token in cookie
-    res.cookie('codenvibe_token', token, {
+    res.cookie('jwt', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'none'

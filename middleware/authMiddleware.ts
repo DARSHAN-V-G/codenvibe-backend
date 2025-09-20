@@ -14,7 +14,7 @@ declare global {
 
 export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const token = req.cookies?.codenvibe_token;
+    const token = req.cookies?.jwt;
     if (!token) {
       const response: AuthResponse = {
         success: false,

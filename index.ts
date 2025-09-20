@@ -18,12 +18,16 @@ import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import User from './models/userModel.js';
 
+
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+
+// Cookie Parser middleware
+app.use(cookieParser());
 
 app.use(cors({
   origin: [ process.env.FRONTEND_URL || 'http://localhost:5173',process.env.ADMIN_URL || 'http://localhost:5174',], // Frontend origin
