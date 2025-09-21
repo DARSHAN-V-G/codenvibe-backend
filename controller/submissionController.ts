@@ -133,6 +133,7 @@ export const submitCode = async (req: Request, res: Response) => {
 
 		// Process results using utility functions
 		const hasSyntaxError = checkForSyntaxErrors(result.results);
+		console.log("Has syntax error:", hasSyntaxError);
 		const passedCount = calculatePassedCount(result.results);
 		const allPassed = passedCount === testCases.length;
 		const status = determineSubmissionStatus(hasSyntaxError, allPassed);
@@ -199,6 +200,27 @@ export const submitCode = async (req: Request, res: Response) => {
 		});
 
 		// Update submission and get the updated document
+
+		// Only calculate new score if question wasn't previously solved
+		let newScore = 0;
+		if (!submission.all_passed) {
+			const totalTestcases = testCases.length;
+			const elapsedSeconds = Math.floor((Date.now() - submission.created_at.getTime()) / 1000);
+			newScore = computeScore(passedCount, totalTestcases, elapsedSeconds, submission.syntax_error, submission.wrong_submission);
+		}
+
+		// Only update team score if the question wasn't previously solved
+
+			await updateTeamScore(teamid, question.number, passedCount, newScore);
+			// Broadcast updated scores to all connected clients
+			await broadcastScores();
+			logger.info('Broadcasted updated scores', { 
+				teamId: teamid, 
+				questionNumber: question.number,
+				passedCount,
+				newScore 
+			});
+
 		submission = await Submission.findByIdAndUpdate(
 			submission._id,
 			{
@@ -214,28 +236,6 @@ export const submitCode = async (req: Request, res: Response) => {
 		);
 		if (!submission) {
 			throw new Error('Failed to update submission');
-		}
-
-		// Only calculate new score if question wasn't previously solved
-		let newScore = 0;
-		if (!submission.all_passed) {
-			const totalTestcases = testCases.length;
-			const elapsedSeconds = Math.floor((Date.now() - submission.created_at.getTime()) / 1000);
-			newScore = computeScore(passedCount, totalTestcases, elapsedSeconds, submission.syntax_error, submission.wrong_submission);
-		}
-
-		// Only update team score if the question wasn't previously solved
-		if (!submission.all_passed && typeof question.number === 'number' && question.number > 0) {
-			await updateTeamScore(teamid, question.number, passedCount, newScore);
-			
-			// Broadcast updated scores to all connected clients
-			await broadcastScores();
-			logger.info('Broadcasted updated scores', { 
-				teamId: teamid, 
-				questionNumber: question.number,
-				passedCount,
-				newScore 
-			});
 		}
 
 		if (!submission) {

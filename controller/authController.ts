@@ -16,6 +16,7 @@ interface TeamDocument extends Document {
   roll_nos: string[];
   emails: string[];
   otp: OTPDocument | null;
+  year : number;
 }
 
 export const logout = (req: Request, res: Response): void => {
@@ -173,7 +174,8 @@ export const verifyOTP = async (req: Request, res: Response) => {
       team: {
         team_name: team.team_name,
         roll_nos: team.roll_nos,
-        emails: team.emails
+        emails: team.emails,
+        year: team.year,
       }
     };
     res.status(200).json(response);

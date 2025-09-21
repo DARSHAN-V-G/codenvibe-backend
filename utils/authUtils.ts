@@ -12,6 +12,7 @@ export interface TeamInfo {
   team_name: string;
   roll_nos: string[];
   emails: string[];
+  year: number;
 }
 
 export interface AuthResponse {

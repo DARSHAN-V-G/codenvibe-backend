@@ -5,7 +5,6 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 import expressWinston from 'express-winston';
 import logger from './utils/logger.js';
-import { getLogs } from './controller/logController.js';
 import connectDB from './db/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -42,7 +41,8 @@ app.use(expressWinston.logger({
   meta: true,
   msg: 'HTTP {{req.method}} {{req.url}}',
   expressFormat: true,
-  colorize: true
+  colorize: true,
+  level : 'info',
 }));
 
 app.use(express.json());
@@ -57,9 +57,6 @@ app.use('/submission', submissionRoutes);
 // Admin routes (protected)
 app.use('/admin/auth', adminAuthRoutes);
 app.use('/admin', adminProtect, adminRoutes);
-
-// Admin logs route (protected)
-app.get('/admin/logs', adminProtect, getLogs);
 
 // Test protected route
 app.get('/protected', protect, (req: Request, res: Response) => {
@@ -79,7 +76,7 @@ app.get('/', (req: Request, res: Response) => {
 // Function to broadcast scores to all connected clients or a specific client
 async function broadcastScores(targetClient?: WebSocket) {
   try {
-    const teams = await User.find({}, 'team_name score').sort('-score');
+    const teams = await User.find({}, 'team_name score year testcases_passed').sort('-score');
     const message = JSON.stringify({ type: 'scores', teams });
 
     if (targetClient) {
@@ -104,9 +101,17 @@ async function broadcastScores(targetClient?: WebSocket) {
 }
 
 // WebSocket: send scores when a client connects
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  const clientIp = req.socket.remoteAddress;
+  console.log(`New WebSocket client connected from ${clientIp} at ${new Date().toISOString()}`);
+  
   // Send initial scores to the new client
   broadcastScores(ws);
+
+  // Log when client disconnects
+  ws.on('close', () => {
+    console.log(`Client ${clientIp} disconnected at ${new Date().toISOString()}`);
+  });
 });
 
 
