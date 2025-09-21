@@ -21,7 +21,7 @@ const TestCaseSchema: Schema = new Schema({
 });
 
 const QuestionSchema: Schema = new Schema({
-  number : {type : Number, required: true, unique: true},
+  number : {type : Number, required: true},
   year: { type: Number, required: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
