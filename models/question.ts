@@ -30,4 +30,6 @@ const QuestionSchema: Schema = new Schema({
   test_cases: { type: [TestCaseSchema], required: true }
 });
 
+// Add compound index to make number unique within a year
+QuestionSchema.index({ number: 1, year: 1 }, { unique: true });
 export default mongoose.model<IQuestion>('Question', QuestionSchema);
