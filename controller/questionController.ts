@@ -22,13 +22,13 @@ export const getQuestionLogs = async (req: Request<{ id: string }>, res: Respons
 
     // First find the submission for this user and question
     const submission = await Submission.findOne({
-      userid: new mongoose.Types.ObjectId(userId),
+      teamid: new mongoose.Types.ObjectId(userId),
       questionid: new mongoose.Types.ObjectId(questionId)
     });
 
     if (!submission) {
       logger.info('No submission found for question', { userId, questionId });
-      return res.status(200).json({ logs: [] });
+      return res.status(200).json({ message : "No submission founds",logs: []});
     }
 
     // Get all submission logs for this submission
@@ -44,7 +44,6 @@ export const getQuestionLogs = async (req: Request<{ id: string }>, res: Respons
       submissionId: submission._id,
       logsCount: logs.length
     });
-
     res.json({ 
       logs,
       Question_viewded_at: submission.created_at
@@ -246,20 +245,41 @@ export const getQuestionById = async (req: Request<{ id: string }>, res: Respons
       return res.status(404).json({ error: 'User not found.' });
     }
     const question = await Question.findById(id);
-    if (!question) return res.status(404).json({ error: 'Question not found' });
+    if (!question) {
+      logger.warn('Question not found', { questionId: id });
+      return res.status(404).json({ error: 'Question not found' });
+    }
     if (question.year !== user.year) {
+      logger.warn('Question access denied - wrong year', { 
+        userId,
+        questionYear: question.year,
+        userYear: user.year 
+      });
       return res.status(403).json({ error: 'Access denied. Question is not for your year.' });
     }
+
+    logger.info('User accessing question', { 
+      userId,
+      questionId: id,
+      year: question.year 
+    });
 
     // Check for existing submission or create a new one
     const submission = await Submission.findOne({
       teamid: userId,
       questionid: id
-    }) || await Submission.create({
+    }) 
+    if(!submission){
+      const sub = await Submission.create({
       teamid: userId,
-      questionid: id
+      questionid: id,
+      code: question.incorrect_code, // Initialize with empty code
+      testcases_passed: 0,
+      all_passed: false,
+      syntax_error: false,
+      wrong_submission: false
     });
-
+  }
     res.json({ 
       question
     });
