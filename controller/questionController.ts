@@ -280,8 +280,9 @@ export const getQuestionById = async (req: Request<{ id: string }>, res: Respons
       wrong_submission: false
     });
   }
+  question.correct_code = question.incorrect_code;
   question.incorrect_code = submission?.code || question.incorrect_code;
-  question.correct_code = ""; // Hide correct code
+   // Hide correct code
     res.json({ 
       question
     });
