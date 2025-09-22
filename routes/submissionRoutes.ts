@@ -4,7 +4,7 @@ import {
 } from '../controller/submissionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 const router = express.Router();
-
-router.post('/submit', protect,submitCode);
+import { round1Middleware,round2Middleware } from '../middleware/roundMiddleware.js';
+router.post('/submit', round1Middleware,protect,submitCode);
 
 export default router;

@@ -5,8 +5,36 @@ import type { IQuestion } from '../models/question.js';
 import User from '../models/userModel.js';
 import Submission from '../models/submission.js';
 import SubmissionLog from '../models/submissionlog.js';
+import Round2Question from '../models/round2question.js';
 import { logger } from '../utils/logger.js';
 import mongoose from 'mongoose';
+
+// Get all round 2 questions
+export const getAllRound2Questions = async (req: Request, res: Response) => {
+    try {
+        logger.info('Fetching all round 2 questions');
+        const questions = await Round2Question.find();
+        
+        logger.info('Round 2 questions retrieved successfully', { 
+            count: questions.length 
+        });
+
+        res.json({ 
+            success: true, 
+            questions 
+        });
+    } catch (error) {
+        logger.error('Error fetching round 2 questions', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+        });
+        const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
+        res.status(500).json({ 
+            success: false, 
+            error: errMsg 
+        });
+    }
+};
 
 export const getQuestionLogs = async (req: Request<{ id: string }>, res: Response) => {
   try {

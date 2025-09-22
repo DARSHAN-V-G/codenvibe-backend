@@ -8,6 +8,7 @@ import logger from './utils/logger.js';
 import connectDB from './db/db.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import { testCloudinaryConnection } from './utils/cloudinaryConfig.js';
 import adminAuthRoutes from './routes/adminAuthRoutes.js';
 import { adminProtect } from './middleware/adminMiddleware.js';
 import questionRoutes from './routes/questionRoutes.js';
@@ -16,7 +17,8 @@ import { protect } from './middleware/authMiddleware.js';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import User from './models/userModel.js';
-
+import round2Submissionroute from './routes/round2SubmissionRoutes.js';
+import { round1Middleware,round2Middleware } from './middleware/roundMiddleware.js';
 
 dotenv.config();
 
@@ -57,7 +59,7 @@ app.use('/submission', submissionRoutes);
 // Admin routes (protected)
 app.use('/admin/auth', adminAuthRoutes);
 app.use('/admin', adminProtect, adminRoutes);
-
+app.use('/round2', round2Middleware,round2Submissionroute);
 // Test protected route
 app.get('/protected', protect, (req: Request, res: Response) => {
   res.json({
@@ -66,6 +68,7 @@ app.get('/protected', protect, (req: Request, res: Response) => {
     user: req.user
   });
 });
+
 
 // Default route
 app.get('/', (req: Request, res: Response) => {
@@ -117,7 +120,26 @@ wss.on('connection', (ws, req) => {
 
 export { broadcastScores };
 
-server.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-  console.log(`WebSocket server running at ws://localhost:${port}`);
-});
+// Start server and initialize services
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB();
+    logger.info('MongoDB connected successfully');
+
+    // Test Cloudinary connection
+    await testCloudinaryConnection();
+    logger.info('Cloudinary connected successfully');
+
+    // Start the server
+    server.listen(port, () => {
+      logger.info(`Server is running at http://localhost:${port}`);
+      logger.info(`WebSocket server running at ws://localhost:${port}`);
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
