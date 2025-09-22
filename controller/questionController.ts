@@ -213,12 +213,29 @@ export const getQuestions = async (req: Request, res: Response) => {
     logger.info('Fetching questions for year', { year, userId });
     
     const questions = await Question.find({ year: Number(year) }, '_id title description');
+
+    // Get all submissions for this user that were successful
+    const submissions = await Submission.find({
+      teamid: userId,
+      all_passed: true
+    }, 'questionid');
+
+    // Create a Set of solved question IDs for O(1) lookup
+    const solvedQuestionIds = new Set(submissions.map(sub => sub.questionid.toString()));
+
+    // Add solved field to each question
+    const questionsWithSolved = questions.map(question => ({
+      ...question.toObject(),
+      solved: solvedQuestionIds.has(question._id.toString())
+    }));
+
     logger.info('Questions retrieved successfully', { 
       userId,
       year,
-      questionCount: questions.length
+      questionCount: questions.length,
+      solvedCount: submissions.length
     });
-    res.json(questions);
+    res.json(questionsWithSolved);
   } catch (error) {
     logger.error('Error fetching questions', {
       error: error instanceof Error ? error.message : 'Unknown error',

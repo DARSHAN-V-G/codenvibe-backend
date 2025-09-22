@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document,Types } from 'mongoose';
 
 interface TestCase {
   input: string;
@@ -6,6 +6,7 @@ interface TestCase {
 }
 
 export interface IQuestion extends Document {
+  _id: Types.ObjectId,
   year: number;
   number : number;
   title: string;
