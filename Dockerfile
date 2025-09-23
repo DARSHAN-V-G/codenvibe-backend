@@ -1,7 +1,5 @@
-# Use Node.js 18 as the base image
 FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
 # Define build arguments
@@ -19,69 +17,29 @@ ARG ADMIN_URL
 ARG CLOUDINARY_URL
 
 # Set environment variables from build arguments
-ENV PORT=$PORT
-ENV MONGODB_URI=$MONGODB_URI
-ENV JWT_SECRET=$JWT_SECRET
-ENV JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET
-ENV JWT_TOKEN_EXPIRY_MINUTES=$JWT_TOKEN_EXPIRY_MINUTES
-ENV JWT_REFRESH_TOKEN_EXPIRY_MINUTES=$JWT_REFRESH_TOKEN_EXPIRY_MINUTES
-ENV USER_EMAIL=$USER_EMAIL
-ENV EMAIL_APP_PASSWORD=$EMAIL_APP_PASSWORD
-ENV COMPILER_URL=$COMPILER_URL
-ENV FRONTEND_URL=$FRONTEND_URL
-ENV ADMIN_URL=$ADMIN_URL
-ENV CLOUDINARY_URL=$CLOUDINARY_URL
+ENV PORT=${PORT}
+ENV MONGODB_URI=${MONGODB_URI}
+ENV JWT_SECRET=${JWT_SECRET}
+ENV JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+ENV JWT_TOKEN_EXPIRY_MINUTES=${JWT_TOKEN_EXPIRY_MINUTES}
+ENV JWT_REFRESH_TOKEN_EXPIRY_MINUTES=${JWT_REFRESH_TOKEN_EXPIRY_MINUTES}
+ENV USER_EMAIL=${USER_EMAIL}
+ENV EMAIL_APP_PASSWORD=${EMAIL_APP_PASSWORD}
+ENV COMPILER_URL=${COMPILER_URL}
+ENV FRONTEND_URL=${FRONTEND_URL}
+ENV ADMIN_URL=${ADMIN_URL}
+ENV CLOUDINARY_URL=${CLOUDINARY_URL}
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy source code
 COPY . .
-
-# Build TypeScript
-RUN npm run build
-
-# Expose port
-EXPOSE $PORT
-
-# Start the application
-CMD ["npm", "start"]
-FROM node:18-alpine as builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Build TypeScript code
-RUN npm run build
-
-# Production stage
-FROM node:18-alpine
-
-WORKDIR /app
-
 # Copy package files and install production dependencies only
 COPY package*.json ./
-RUN npm install --only=production
+RUN npm install 
 
 # Copy built files from builder stage
-COPY --from=builder /app/dist ./dist
+RUN npm run build
 
-# Copy environment variables if needed
-COPY .env.example .env
-
-# Expose the port your app runs on
+# Expose the port
 EXPOSE 4000
 
 # Start the application
-CMD ["node", "--es-module-specifier-resolution=node", "dist/index.js"]
+CMD ["npm","run","start"]
