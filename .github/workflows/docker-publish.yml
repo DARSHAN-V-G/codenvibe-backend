@@ -53,3 +53,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PORT=${{ secrets.PORT }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            JWT_TOKEN_EXPIRY_MINUTES=${{ secrets.JWT_TOKEN_EXPIRY_MINUTES }}
+            JWT_REFRESH_TOKEN_EXPIRY_MINUTES=${{ secrets.JWT_REFRESH_TOKEN_EXPIRY_MINUTES }}
+            USER_EMAIL=${{ secrets.USER_EMAIL }}
+            EMAIL_APP_PASSWORD=${{ secrets.EMAIL_APP_PASSWORD }}
+            COMPILER_URL=${{ secrets.COMPILER_URL }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            ADMIN_URL=${{ secrets.ADMIN_URL }}
+            CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}

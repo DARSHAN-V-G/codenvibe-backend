@@ -23,7 +23,7 @@ import { round1Middleware,round2Middleware } from './middleware/roundMiddleware.
 dotenv.config();
 
 const app: Express = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
