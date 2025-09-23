@@ -32,7 +32,7 @@ const wss = new WebSocketServer({ server });
 app.use(cookieParser());
 
 app.use(cors({
-  origin: [ process.env.FRONTEND_URL || 'http://localhost:5173',process.env.ADMIN_URL || 'http://localhost:5174',], // Frontend origin
+  origin: [ process.env.FRONTEND_URL || 'http://localhost:5173','http://localhost:5173',process.env.ADMIN_URL || 'http://localhost:5174','http://localhost:5174'], // Frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
