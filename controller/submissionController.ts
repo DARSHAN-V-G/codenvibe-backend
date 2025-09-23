@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import Question from '../models/question.js';
 import SubmissionLog, { SubmissionStatus } from '../models/submissionlog.js';
 import axios from 'axios';
+import https from 'https';
 import { logger } from '../utils/logger.js';
 import { broadcastScores } from '../index.js';
 dotenv.config();
@@ -111,8 +112,11 @@ export const submitCode = async (req: Request, res: Response) => {
 				testCases,
 				submissionid: submission._id
 			}, {
-				headers: { 'Content-Type': 'application/json' }
-			});
+				  headers: { 'Content-Type': 'application/json' },
+				  httpsAgent: new https.Agent({  
+					rejectUnauthorized: false // WARNING: This bypasses SSL certificate verification
+				  })
+				});
 			result = axiosResponse.data;
 		} catch (compilerError) {
 			logger.error('Compiler service communication error', {
