@@ -24,6 +24,7 @@ dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT || 4000;
+console.log("port fetched from env:",process.env.PORT);
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
