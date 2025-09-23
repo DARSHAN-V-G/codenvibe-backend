@@ -19,7 +19,7 @@ router.get('/teams', getAllTeams);
 router.post('/round2-question', addRound2Question);
 router.get('/getround2-questions', protect, getAllRound2Questions);
 router.get('/getround2-submission/:questionid', protect, getRound2QuestionSubmissions);
-router.post('/update-round', protect, updateCurrentRound);  // New route to update current round
+router.post('/update-round', protect, updateCurrentRound);  // New route to update current round // New route to get current round
 //router.delete('/remove-team', removeTeam);
 router.get('/logs', getLogs);
 

@@ -8,6 +8,31 @@ import Round2Question from '../models/round2question.js';
 import Round2Submission from '../models/round2Submission.js';
 import Admin from '../models/admin.js';
 
+// Get current round
+export const getCurrentRound = async (_req: Request, res: Response) => {
+  try {
+    const admin = await Admin.findOne({ username: 'admin' });
+    if (!admin) {
+      logger.error('Admin not found in getCurrentRound');
+      return res.status(404).json({
+        success: false,
+        error: 'Admin not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      current_round: admin.current_round
+    });
+  } catch (error) {
+    logger.error('Error in getCurrentRound', { error });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
 // Update current round
 export const updateCurrentRound = async (req: Request, res: Response) => {
   try {

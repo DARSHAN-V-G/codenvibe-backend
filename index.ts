@@ -19,7 +19,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import User from './models/userModel.js';
 import round2Submissionroute from './routes/round2SubmissionRoutes.js';
 import { round1Middleware,round2Middleware } from './middleware/roundMiddleware.js';
-
+import { getCurrentRound } from './controller/adminController.js';
 dotenv.config();
 
 const app: Express = express();
@@ -55,7 +55,7 @@ connectDB();
 app.use('/auth', authRoutes);
 app.use('/question',questionRoutes);
 app.use('/submission', submissionRoutes);
-
+app.get('/current-round', getCurrentRound); // New route to get current round
 // Admin routes (protected)
 app.use('/admin/auth', adminAuthRoutes);
 app.use('/admin', adminProtect, adminRoutes);
