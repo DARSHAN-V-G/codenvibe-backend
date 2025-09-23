@@ -2,7 +2,7 @@
 FROM node:20-alpine
 
 # Set working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Define build arguments
 ARG PORT
