@@ -106,7 +106,7 @@ export const submitCode = async (req: Request, res: Response) => {
 
 		let result;
 		try {
-			const axiosResponse = await axios.post(`${COMPILER_URL}/submit-python`, {
+			const axiosResponse = await axios.post(`${COMPILER_URL}submit-python`, {
 				code,
 				testCases,
 				submissionid: submission._id

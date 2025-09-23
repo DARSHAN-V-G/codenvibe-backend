@@ -340,6 +340,7 @@ export const getQuestionById = async (req: Request<{ id: string }>, res: Respons
 
 import axios from 'axios';
 import dotenv from 'dotenv';
+import https from 'https';
 
 dotenv.config();
 const COMPILER_URL = process.env.COMPILER_URL;
@@ -351,15 +352,19 @@ export const checkQuestion = async (req: Request<{ id: string }>, res: Response)
     const question = await Question.findById(id);
     if (!question) return res.status(404).json({ error: 'Question not found' });
     const { correct_code, test_cases } = question;
-
+    console.log(COMPILER_URL);
     // Send code and testCases to compiler service using axios
-    const axiosResponse = await axios.post(`${COMPILER_URL}/submit-python`, {
+    const axiosResponse = await axios.post(`${COMPILER_URL}submit-python`, {
       code: correct_code,
       testCases: test_cases,
       submissionid: question._id
     }, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      httpsAgent: new https.Agent({  
+        rejectUnauthorized: false // WARNING: This bypasses SSL certificate verification
+      })
     });
+
     const result = axiosResponse.data;
     if (!result.results) {
       return res.status(500).json({ error: 'Compiler service error', details: result });
@@ -369,6 +374,7 @@ export const checkQuestion = async (req: Request<{ id: string }>, res: Response)
     const passedCount = result.results.filter((r: any) => r.passed).length;
     res.json({ passed: passedCount, total: result.results.length, results: result.results });
   } catch (error) {
+    console.log("error :",error);
     const errMsg = typeof error === 'object' && error !== null && 'message' in error ? (error as any).message : String(error);
     res.status(400).json({ error: errMsg });
   }
