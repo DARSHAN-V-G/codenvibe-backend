@@ -25,8 +25,9 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT || 4000;
 console.log("port fetched from env:",process.env.PORT);
+const BASE_PATH = '/backend/githeist';
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, path: BASE_PATH });
 
 // Cookie Parser middleware
 app.use(cookieParser());
@@ -107,6 +108,7 @@ async function broadcastScores(targetClient?: WebSocket) {
 }
 
 // WebSocket: send scores when a client connects
+// WebSocket: send scores when a client connects
 wss.on('connection', (ws, req) => {
   const clientIp = req.socket.remoteAddress;
   console.log(`New WebSocket client connected from ${clientIp} at ${new Date().toISOString()}`);
@@ -137,7 +139,7 @@ const startServer = async () => {
     // Start the server
     server.listen(port, () => {
       logger.info(`Server is running at http://localhost:${port}`);
-      logger.info(`WebSocket server running at ws://localhost:${port}`);
+  logger.info(`WebSocket server running at ws://localhost:${port}${BASE_PATH}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
