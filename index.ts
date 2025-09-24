@@ -75,7 +75,9 @@ app.get('/protected', protect, (req: Request, res: Response) => {
 app.get('/', (req: Request, res: Response) => {
   res.send('Codenvibe backend Server is running');
 });
-
+app.get('/backend/githeist', (req: Request, res: Response) => {
+  res.send('Codenvibe backend Server is running');
+});
 
 // Function to broadcast scores to all connected clients or a specific client
 async function broadcastScores(targetClient?: WebSocket) {
