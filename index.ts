@@ -53,16 +53,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 connectDB();
 
-app.use('/auth', authRoutes);
-app.use('/question',questionRoutes);
-app.use('/submission', submissionRoutes);
-app.get('/current-round', getCurrentRound); // New route to get current round
+app.use('/backend/githeist/auth', authRoutes);
+app.use('/backend/githeist/question',questionRoutes);
+app.use('/backend/githeist/submission', submissionRoutes);
+app.get('/backend/githeist/current-round', getCurrentRound); // New route to get current round
 // Admin routes (protected)
-app.use('/admin/auth', adminAuthRoutes);
-app.use('/admin', adminProtect, adminRoutes);
-app.use('/round2', round2Middleware,round2Submissionroute);
+app.use('/backend/githeist/admin/auth', adminAuthRoutes);
+app.use('/backend/githeist/admin', adminProtect, adminRoutes);
+app.use('/backend/githeist/round2', round2Middleware,round2Submissionroute);
 // Test protected route
-app.get('/protected', protect, (req: Request, res: Response) => {
+app.get('/backend/githeist/protected', protect, (req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'You have access to this protected route',
