@@ -76,7 +76,7 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Codenvibe backend Server is running');
 });
 app.get('/backend/githeist', (req: Request, res: Response) => {
-  res.send('Codenvibe backend Server is running');
+  res.send('Codenvibe backend Server is running with backend/githeist prefix');
 });
 
 // Function to broadcast scores to all connected clients or a specific client
