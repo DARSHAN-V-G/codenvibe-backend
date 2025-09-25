@@ -74,7 +74,7 @@ app.get('/backend/githeist/protected', protect, (req: Request, res: Response) =>
 
 // Default route
 app.get('/', (req: Request, res: Response) => {
-  res.send('Codenvibe backend Server is running');
+  res.send('Codenvibe backend Server is running without backend/githeist prefix');
 });
 app.get('/backend/githeist', (req: Request, res: Response) => {
   res.send('Codenvibe backend Server is running with backend/githeist prefix');

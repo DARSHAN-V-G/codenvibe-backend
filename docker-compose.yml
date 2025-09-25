@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_loadbalancer2
+    ports:
+      - "5000:9000"
+    volumes:
+      - ./conf/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - codenvibe-backend
+    networks:
+      - code_network
+
+  codenvibe-backend:
+    image: ghcr.io/darshan-v-g/codenvibe-backend:latest
+    container_name: codenvibe-backend
+    networks:
+      - code_network
+
+networks:
+  code_network:
+    driver: bridge
