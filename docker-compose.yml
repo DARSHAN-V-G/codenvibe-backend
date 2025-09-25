@@ -15,7 +15,7 @@ services:
 
   codenvibe-backend:
     image: ghcr.io/darshan-v-g/codenvibe-backend:latest
-    container_name: codenvibe-backend
+    container_name: codenvibe-backend2
     networks:
       - code_network
 
